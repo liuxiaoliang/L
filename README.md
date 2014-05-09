@@ -1,4 +1,4 @@
-L
+说明
 =
 
 machine  learning
@@ -14,3 +14,7 @@ nlp：自然语言处理相关
 common： 一些通用的库和函数  
 
 app： 具体的任务应用，目前只有一个， kaggle-sentiment-ananlysisi  
+
+文档
+=
+(liuxiaoliang.github.io)
