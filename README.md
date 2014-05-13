@@ -7,6 +7,8 @@ machine  learning
 
 目录结构
 =
+math: 数学相关的库  
+
 mllib： 机器学习相关  
 
 nlp：自然语言处理相关  
