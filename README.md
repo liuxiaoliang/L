@@ -7,7 +7,7 @@ machine  learning
 
 目录结构
 =
-math: 数学相关的库  
+math： 数学相关的库  
 
 mllib： 机器学习相关  
 
