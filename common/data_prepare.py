@@ -36,6 +36,7 @@ class CateDPP(object):
     feature2id = {} # map feature to featre id
     id2feature = {} # map feature id to feature
     feature_num = 0
+    label_list = set()
     slist = [] # store sample
     
     
@@ -107,6 +108,7 @@ class CateDPP(object):
             s.sid = sid
             label = nodelist.pop(0)
             s.label = label
+            self.label_list.add(label)
             for i in range(len(nodelist)):
                 f = Feature()
                 try:
