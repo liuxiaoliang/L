@@ -109,6 +109,7 @@ class CateDPP(object):
             s.sid = sid
             label = nodelist.pop(0)
             s.label = label
+            self.label_list.add(label)
             for i in range(len(nodelist)):
                 f = Feature()
                 try:
@@ -137,6 +138,8 @@ class CateDPP(object):
             # get one sample
             if len(s.flist) > 0:
                 self.slist.append(s)
+            else:
+                print("line {0}: feature empty ".format(line_no))
             # next line
             line_no += 1
 
