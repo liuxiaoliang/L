@@ -170,7 +170,6 @@ class NavieBayes(object):
                 class_score[l] = math.log(self.class_prior_prob[l])
             for f in s.flist:
                 fname = self.cdpp.id2feature[f.iid]
-                print fname,
                 for l in self.class_feature_prob_matrix:
                     if fname not in self.class_feature_prob_matrix[l]:
                         class_score[l] += math.log(self.class_default_prob[l])
@@ -178,7 +177,6 @@ class NavieBayes(object):
                         #print self.class_feature_prob_matrix[l][fname]
                         class_score[l] += math.log(self.class_feature_prob_matrix[l][fname])
             # get yi
-            print class_score
             yi = max(class_score.items(), key=lambda x:x[1])[0]
             s.label = yi
             fp.write("%s,%s\n" % (s.sid, s.label))
