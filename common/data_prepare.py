@@ -15,13 +15,15 @@ import sys
 import re
 
 class Feature(object):
-    iid = 0 # int
-    iweight = 0 # float
+    def __init__(self):
+        self.iid = 0 # int
+        self.iweight = 0 # float
 
 class Sample(object):
-    sid = None # str
-    label = None # str
-    flist = [] # feature list
+    def __init__(self):
+        self.sid = None # str
+        self.label = None # str
+        self.flist = [] # feature list
 
 class CateDPP(object):
     """data preprocess for classification
@@ -33,12 +35,6 @@ class CateDPP(object):
         slist: a list storing sample matrix
         load: function for loading data
     """
-    feature2id = {} # map feature to featre id
-    id2feature = {} # map feature id to feature
-    feature_num = 0
-    label_list = set()
-    slist = [] # store sample
-    
     
     def __init__(self, file_path_feature, file_path_sample):
         """for labled data
@@ -55,6 +51,11 @@ class CateDPP(object):
             feautre_name feature_id
           
         """
+        self.feature2id = {} # map feature to featre id
+        self.id2feature = {} # map feature id to feature 
+        self.feature_num = 0
+        self.label_list = set()
+        self.slist = [] # store sample 
         self.file_path_sample = file_path_sample
         self.file_path_feature = file_path_feature
     
@@ -102,13 +103,12 @@ class CateDPP(object):
                 err_msg = "unvalid line"
                 print("line {0}: {1}".format(line_no, err_msg))
                 continue
-            s = Sample()
+            s = Sample()            
             nodelist = line.split()
             sid = nodelist.pop(0)
             s.sid = sid
             label = nodelist.pop(0)
             s.label = label
-            self.label_list.add(label)
             for i in range(len(nodelist)):
                 f = Feature()
                 try:
@@ -139,7 +139,7 @@ class CateDPP(object):
                 self.slist.append(s)
             # next line
             line_no += 1
-        
+
         fp.close()
     
     def normlizing(self):
@@ -154,5 +154,7 @@ if __name__ == '__main__':
     cd = CateDPP(file_path_feature, file_path_sample)
     cd.load_feature()
     cd.load_sample()
-    print len(cd.slist)
-    print cd.slist[0]
+    print cd.feature2id.items()[:3]
+    print cd.slist[0].sid, cd.slist[0].label, [x.iid for x in cd.slist[0].flist]
+    print cd.slist[1].sid, cd.slist[1].label, [x.iid for x in cd.slist[1].flist]
+    
