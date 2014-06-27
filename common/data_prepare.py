@@ -246,7 +246,9 @@ class RnnTree(object):
         s = []
         while(len(s) > 0 or p != None):
             while(p != None):
-                print self.nodelist[p].nid, self.nodelist[p].content
+                print self.nodelist[p].nid, self.nodelist[p].content, self.nodelist[p].nlabel
+                if self.nodelist[p].fid:
+                    print self.nodelist[p].fid
                 s.append(p)
                 p = self.nodelist[p].left
             if len(s) > 0:
