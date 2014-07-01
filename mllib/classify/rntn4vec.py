@@ -12,26 +12,32 @@ sentiment compositionality over a Sentiment Treebank". Socker(2013).
 __author__ = "xiaoliang liu"
 
 import sys
+sys.path.append("../../common")
+import math
+import numpy as np
 
 class RNTN(object):
     """rnn model
 
     """
     
-    def __init__(self,num_cate=None,num_hid=None,max_train_time_seconds=60*60*24,
+    def __init__(self,num_cate=0,num_hid=0,max_train_time_seconds=60*60*24,
                  batch_size=27,epochs=400,adagrad_reset_frequency=1,
                  dev_file=None,train_file=None):
         # parameters options
         self.num_cate = num_cate # number of calsses
         self.num_hid = num_hid # Dimension of hidden layers, size of word vectors
-        
+        self.wordvec = {}
+        self.rnnloss = RNNLoss() # include V and W in activation function.
+        self.cate_weight = {}
         # training options
         self.max_train_time_milliseconds = max_train_time_seconds * 1000
         self.batch_size = batch_size
         self.epochs = epochs # Number of times through all the trees
         self.adagrad_reset_frequency = adagrad_reset_frequency
+        # other
+        self.t = Timing()
         
-        self.rnnloss = RNNLoss()
     def develop(self):
         """adjust parameters
 
@@ -60,12 +66,13 @@ class RNTN(object):
                 tree_end = self.batch_size * (batch + 1)
                 if tree_end + self.batch_size > train_trees.size():
                     tree_end = train_trees.size()
-                sum_grad_square = self.one_batch_traning(self.rnnloss, training_trees[tree_start, tree_end], sum_grad_square)
+                self.one_batch_traning(self.rnnloss, training_trees[tree_start, tree_end], sum_grad_square)
                 
                     
     def one_batch_training(self, rnnloss, rnntree, sum_grad_square):
         # adagrad
-        pass
+        for t in rnntree:
+            
 
     def wordvec(self):
         """get distributed represent for sentence
@@ -79,6 +86,9 @@ class RNTN(object):
         """
         pass
     
+    def softmax(self, ):
+        pass
+
     def save_model(self):
         pass
 
@@ -94,15 +104,25 @@ class RNNLoss(object):
 
 
 class ActFunc(object):
-    """activate function
-
-    """
-    pass
-
-
-class LossFunc(object):
-    """loss function
+    """activation function
 
     """
     def __init__(self):
         pass
+
+    def tanh(self, x):
+        """tanh
+        
+        Args:
+            x: a matrix with float type
+
+        Returns:
+            tanh(x): also a matrix
+        """
+        row, col = x.shape
+        out = np.ndarray(shape=(row, col),dtype=float)
+        for i in range(row):
+            for j in range(col):
+                out[i, j] = math.tanh(x[i, j])
+        return out
+
