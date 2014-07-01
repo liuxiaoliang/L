@@ -158,14 +158,18 @@ class TreeNode(object):
     """
     def __init__(self, nid=None, nlabel=None, left=None,
                  right=None, parent=None, content=None):
+        # tree arrtributes
         self.nid = nid # node id
         self.nlabel = nlabel
         self.left = left
         self.right = right
         self.parent = parent
         self.content = content
-        self.fid = None # global feature id if this node is a feature.
+        self.fid = None # global feature id if this node is a singal word.
         self.leaf = False
+        # rnn tree arrtributes
+        self.prediction = None # node's cate predicted by model.
+        self.nodevec = None # node's vector representation.
     
     def isLeaf(self):
         return self.leaf
