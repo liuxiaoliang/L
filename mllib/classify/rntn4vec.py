@@ -86,8 +86,33 @@ class RNTN(object):
         """
         pass
     
-    def softmax(self, ):
-        pass
+    def softmax(self, w, nodevec):
+        """softmax classifer
+        
+        Args:
+            w: cate weight with size C * (N +1), including bias.
+            nodevec: sample vector with size N + 1, including bias.
+        
+        Returns:
+            A matrix with one column
+        """
+        resm = np.dot(w, nodevec)
+        return resm/(resm.sum()+1)
+    
+    def get_cate(self, resm):
+        """get cate
+        
+        Args:
+            returned value from softmax
+
+        Returns:
+            index with max value in resm
+        """
+        argmax = 0
+        for i in range(1, resm.size):
+            if resm[i] > resm[argmax]:
+                argmax = i
+        return argmax
 
     def save_model(self):
         pass
