@@ -69,6 +69,7 @@ class RNTN(object):
                 self.one_batch_traning(self.rnnloss, training_trees[tree_start, tree_end], sum_grad_square)
                 
                     
+    
     def one_batch_training(self, rnnloss, rnntree, sum_grad_square):
         # adagrad
         for t in rnntree:
