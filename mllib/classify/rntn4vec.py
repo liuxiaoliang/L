@@ -73,7 +73,7 @@ class RNTN(object):
                 tree_end = self.op.batch_size * (batch + 1)
                 if tree_end + self.op.batch_size > len(shuffle_tree_list):
                     tree_end = len(shuffle_tree_list)
-                self.one_batch_traning(self.model, shuffle_tree_list[tree_start, tree_end], sum_grad_square)
+                self.one_batch_traning(shuffle_tree_list[tree_start:tree_end], sum_grad_square)
                 # computer timing
                 elapsed_time = self.t.report()
                 print "epoch is %d, batch is %d, elapsed time %d" % (epoch, batch, elapsed_time)
@@ -89,12 +89,12 @@ class RNTN(object):
             
     def one_batch_training(self, t, sum_grad_square):
         # adagrad
-        rlg = RntnLossAndGradient(self.model,t)
+        rlg = RntnLossAndGradient(self.model, t, self.op)
         theta = self.model.param2vector()
         eps = 1e-3
         cur_loss = 0
-        gradf = rlg.derivative(theta)
-        cur_loss = rlg.value(theta)
+        gradf = rlg.derivative_at(theta)
+        cur_loss = rlg.value_at(theta)
         print "cur batch loss %f" % cur_loss
         for f in range(len(gradf)):
             sum_grad_square[f] = sum_grad_square[f] + gradf[f]*gradf[f]
@@ -112,20 +112,7 @@ class RNTN(object):
 
         """
         pass
-    
-    def softmax(self, w, nodevec):
-        """softmax classifer
-        
-        Args:
-            w: cate weight with size C * (N +1), including bias.
-            nodevec: sample vector with size N + 1, including bias.
-        
-        Returns:
-            A matrix with one column
-        """
-        resm = np.dot(w, nodevec)
-        return resm/(resm.sum()+1)
-    
+       
     def get_cate(self, resm):
         """get cate
         
@@ -179,10 +166,12 @@ class RntnModel(object):
         self.V = np.zeros(shape=(2*num_hid, 2*num_hid, num_hid), dtype=float) # tensor
         self.Ws = np.zeros(shape=(num_cate, num_hid + 1), dtype=float) # cate weight
         self.L = {} # num_word * num_hid
+        self.wlist = [] # word list
         rd = dpp.RNNDPP(feature_file, '')
         rd.load_feature()
         # init L in model
         for fid in rd.id2feature:
+            self.wlist.append(fid)
             self.model.L[fid] = np.zeros(shape=(num_hid, 1), dtype=float)
             
     def randomW(self):
@@ -204,7 +193,7 @@ class RntnModel(object):
     def randomWs(self):
         # bias column values are initialized zero
         r = 1.0 / (math.sqrt(self.num_hid))
-        row, col = self.W.shape
+        row, col = self.Ws.shape
         for i in range(row):
             for j in range(col-1):
                 self.Ws[i, j] = random.randrange(-r, r)
@@ -217,16 +206,114 @@ class RntnModel(object):
     def total_param_size(self):
         return self.W.size + self.V.size + self.Ws.size + len(self.L) * self.num_hid
 
-
+    def param2vector(self):
+        total_size = self.total_param_size()
+        theta = [0.0] * total_size
+        i = 0
+        try:
+            for t in self.W.flat:
+                theta[i] = t
+                i += 1
+            for t in self.V.flat:
+                theta[i] = t
+                i += 1
+            for t in self.Ws.flat:
+                theta[i] = t
+                i += 1
+            for w in self.wlist:
+                for t in self.L[w].flat:
+                    theta[i] = t
+                    i += 1
+        except IndexError, e:
+            sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d, error is %s \n" 
+                             % (total_size, i, str(e)))
+            exit(1)
+        if i != total_size:
+            sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d \n",
+                             % (total_size, i))
+            exit(1)
+    
+    def vector2param(theta):
+        total_size = self.total_param_size()
+        if len(theta) != total_size:
+            sys.stderr.write("vector2param error, len(theta) is %d, total_param_size is %d \n",
+                             %(len(theta), total_size))
+            exit(1)
+         index = 0
+         # get W
+         row, col = self.W.shape
+         self.W = np.ndarray(shape=(row, col), buffer=array(theta[index:index+row*col]), dtype=float)
+         index += row*col
+         # get V
+         row, col, s = self.V.shape
+         self.V = np.ndarray(shape=(row,col,s), buffer=array(theta[index:index+row*col*s]), dtype=float)
+         index += row*col*s
+         # get Ws
+         row, col = self.Ws.shape
+         self.Ws = np.ndarray(shape(row,col), buffer=array(theta[index:index+row*col]), dtype=float)
+         index += row*col
+         # get L
+         row = self.num_hid
+         for w in self.wlist:
+             self.L[w] = nd.ndarray(shape(row, 1), buffer=array(theta[index:index+row]), dtype=float)
+             index += row
+         
+         
 class RntnLossAndGradient(object):
     """loss and gradient from rnn tree
 
     """
-    def __init__(self, m, t):
+    def __init__(self, m, t, op):
         self.model = m
         self.sample = t
+        self.op = op
+        self.derivative = [] # derivative
+        self.value = 0.0 # value
+        self.f = SomeFunc()
+        
+    def derivative_at(self, theta):
+        self.calculate(theta)
+        return derivative
     
+    def value_at(self, theta):
+        self.calculate(theta)
+        return value
+
+    def calculate(self, theta):
+        self.model.vector2param(theta)
+        for t in self.sample:
+            forward_propagate(t, t.root)
+            
     
+    def forward_propagate(self, tree, cur_point):
+        nodevector = None
+        cate = None
+        if cur_point is None:
+            exit(1)
+        if tree.nodelist[cur_point].isLeaf():
+            cate = tree.nodelist[cur_point].nlabel
+            if tree.nodelist[cur_point].fid:
+                wordvector = self.model.L[fid]
+                nodevector = self.f.tanh(wordvector)
+        elif(tree.nodelist[cur_point].left and tree.nodelist[cur_point].right):
+            self.forward_propagate(tree,tree.nodelist[cur_point].left)
+            self.forward_propagate(tree,tree.nodelist[cur_point].right)
+            leftvector = tree.nodelist[tree.nodelist[cur_point].left].nodevec
+            rightvector = tree.nodelist[tree.nodelist[cur_point].right].nodevec
+            childrenvector = self.f.concatenate_with_bias(leftvector, rightvector)
+            tensor_in = self.f.concatenate(leftvector, rightvector)
+            tensor_out = self.f.bilinear_products(self.model.V, tensor_in)
+            nodevector = self.f.tanh(np.dot(self.W,childrenvector) + tensor_out)
+        elif(tree.nodelist[cur_point].left):
+            self.forward_propagate(tree,tree.nodelist[cur_point].left)
+            leftvector = tree.nodelist[tree.nodelist[cur_point].left].nodevec
+            nodevector = self.f.tanh(leftvector)
+        #elif(tree.nodelist[cur_point].right):
+        # tree is created by preorder traversal, so never gone here
+        predictions = self.f.softmax(np.dot(self.model.Ws, self.f.concatenate_with_bias(nodevector)))
+        tree.nodelist[cur_point].nodevector = nodevector
+        tree.nodelist[cur_point].prediction = prediction
+        tree.nodelist[cur_point].index = self.f.get_predicted_cate(prediction)
 
 
 class SomeFunc(object):
@@ -251,6 +338,61 @@ class SomeFunc(object):
             for j in range(col):
                 out[i, j] = math.tanh(x[i, j])
         return out
+
+    def concatenate_with_bias(self, lvec, rvec):
+        # bias is 1.0
+        new_array_row = lvec.shape[0] + rvec.shape[0]
+        new_array = np.zeros(shope=(new_array_row, 1), dtype=float)
+        index = 0
+        for i in range(lvec.shape[0]):
+            new_array[index][0] = lvec[i][0]
+            index += 1
+        for i in range(rvec.shape[0]):
+            new_array[index][0] = rvec[i][0]
+            index += 1
+        new_array[index][0] = 1.0 # bias
+    
+        return new_array
+
+    def concatenate(self, lvec, rvec):
+        new_array_row = lvec.shape[0] + rvec.shape[0]
+        new_array = np.zeros(shope=(new_array_row, 1), dtype=float)
+        index = 0
+        for i in range(lvec.shape[0]):
+            new_array[index][0] = lvec[i][0]
+            index += 1
+        for i in range(rvec.shape[0]):
+            new_array[index][0] = rvec[i][0]
+            index += 1
+        
+        return new_array
+    
+    def bilinear_products(self, t, vec):
+        row, col, s = t.shape
+        out = np.zeros(shape=(s, 1), dtype=float)
+        for i in range(s):
+            out[i][0] = np.dot(np.dot(vec.transpose(), t[:,:,i]), vec)
+        return out
+    
+    def softmax(self, w, nodevec):                                       
+        """softmax classifer                                             
+        
+        Args:                                                            
+            w: cate weight with size C * (N +1), including bias.         
+            nodevec: sample vector with size N + 1, including bias.      
+                                                                             
+        Returns:                                                         
+            A matrix with one column                                     
+        """                                                              
+        resm = np.dot(w, nodevec)                                        
+        return resm/(resm.sum()+1)                                       
+
+    def get_predicted_cate(self, vec):
+        index = 0
+        for i in range(vec.size):
+            if vec[i][0] > index:
+                index = i
+        return index
 
 
 def rntn_train(feature_file, dev_file, train_file, model_file):

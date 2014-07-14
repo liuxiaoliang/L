@@ -169,7 +169,8 @@ class TreeNode(object):
         self.leaf = False
         # rnn tree arrtributes
         self.prediction = None # node's cate predicted by model.
-        self.nodevec = None # node's vector representation.
+        self.nodevector = None # node's vector representation.
+        self.index = -1 # indicate the index in prediction where cate is located in.
     
     def isLeaf(self):
         return self.leaf
