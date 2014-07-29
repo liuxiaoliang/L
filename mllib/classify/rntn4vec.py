@@ -6,7 +6,7 @@
 
 """recursive neural tensor network
 
-Implemention of algorithm descripted "Stanford Recursive Deep Models for 
+Implemention of algorithm descripted "Stanford Recursive Deep Models for
 sentiment compositionality over a Sentiment Treebank". Socker(2013).
 """
 __author__ = "xiaoliang liu"
@@ -17,13 +17,14 @@ import math
 import random
 import numpy as np
 import data_prepare as dpp
+from myexception import *
 
 class RNTN(object):
     """rnn model
 
     """
-    
-    def __init__(self, op=None, model=None, 
+
+    def __init__(self, op=None, model=None,
                  feature_file=None, dev_file=None,
                  train_file=None, model_file=None):
         self.op = op # training options
@@ -31,7 +32,7 @@ class RNTN(object):
         self.feature_file = feature_file
         self.dev_file = dev_file
         self.train_file = train_file
-        self.model_file = model_file        
+        self.model_file = model_file
         self.t = Timing() # Timing class
         self.trd = None # train or test dpp handle
         self.drd = None # dev dpp handle
@@ -49,7 +50,7 @@ class RNTN(object):
             self.drd = dpp.RNNDPP(self.feature_file, self.dev_file)
             self.drd.load_feature()
             self.drd.load_sample()
-        
+
     def train(self):
         """train wordvec and classified model
 
@@ -62,7 +63,7 @@ class RNTN(object):
         # adagrad
         for epoch in range(self.op.epochs):
             print "starting epoch %d" % epoch
-            if (epoch > 0 and self.op.adagrad_reset_frequency > 0 and 
+            if (epoch > 0 and self.op.adagrad_reset_frequency > 0 and
                 (epoch % self.op.adagrad_reset_frequency) == 0):
                 sum_grad_square = [0.0] * self.model.total_param_size() # reset sum_grad_square
             shuffle_tree_list = self.trd.slist
@@ -86,7 +87,7 @@ class RNTN(object):
             if(self.op.max_train_time_seconds > 0 and elapsed_time > self.op.max_train_time_seconds*1000):
                 print "Max training time exceeded, exiting"
                 break
-            
+
     def one_batch_training(self, t, sum_grad_square):
         # adagrad
         rlg = RntnLossAndGradient(self.model, t, self.op)
@@ -99,7 +100,7 @@ class RNTN(object):
         for f in range(len(gradf)):
             sum_grad_square[f] = sum_grad_square[f] + gradf[f]*gradf[f]
             theta[f] = theta[f] - (self.op.learning_rate * gradf[f]/(math.sqrt(sum_grad_square[f])+eps))
-        self.model.vector2param(theta)    
+        self.model.vector2param(theta)
         
     def wordvec(self):
         """get distributed represent for sentence
@@ -112,10 +113,10 @@ class RNTN(object):
 
         """
         pass
-       
+
     def get_cate(self, resm):
         """get cate
-        
+
         Args:
             returned value from softmax
 
@@ -139,14 +140,14 @@ class RntnOptions(object):
     """training options
 
     """
-    def __init__(self, batch_size=27, epochs=400, debug_output_epochs=8, 
-                 max_train_time_seconds=60*60*24, learning_rate=0.1, 
-                 adagrad_reset_frequency=1, regW=0.001, regV=0.001, 
+    def __init__(self, batch_size=27, epochs=400, debug_output_epochs=8,
+                 max_train_time_seconds=60*60*24, learning_rate=0.1,
+                 adagrad_reset_frequency=1, regW=0.001, regV=0.001,
                  regWs=0.0001, regL=0.0001, isEval=True):
         self.batch_size = batch_size # batch size in each training
         self.epochs = epochs # training epochs
         self.debug_output_epochs = debug_output_epochs
-        self.max_train_time_seconds = max_train_time_seconds # 
+        self.max_train_time_seconds = max_train_time_seconds #
         self.learning_rate = learning_rate
         self.adagrad_reset_frequency = adagrad_reset_frequency
         self.regW = regW # Regularization cost for the transform matrix
@@ -173,7 +174,7 @@ class RntnModel(object):
         for fid in rd.id2feature:
             self.wlist.append(fid)
             self.model.L[fid] = np.zeros(shape=(num_hid, 1), dtype=float)
-            
+
     def randomW(self):
         # bias column values are initialized zero
         r = 1.0 / (math.sqrt(self.num_hid)*2.0)
@@ -181,7 +182,7 @@ class RntnModel(object):
         for i in range(row):
             for j in range(col-1):
                 self.W[i, j] = random.randrange(-r, r)
-    
+
     def randomV(self):
         r = 1.0 / (self.num_hid*4.0)
         row, col, s = self.V.shape
@@ -189,7 +190,7 @@ class RntnModel(object):
             for j in range(col):
                 for t in range(s):
                     self.V[i,j,t] = random.randrange(-r, r)
-                                       
+
     def randomWs(self):
         # bias column values are initialized zero
         r = 1.0 / (math.sqrt(self.num_hid))
@@ -197,12 +198,12 @@ class RntnModel(object):
         for i in range(row):
             for j in range(col-1):
                 self.Ws[i, j] = random.randrange(-r, r)
-    
+
     def randomL(self):
         for w in self.L:
             for i in range(self.num_hid):
                 self.L[w][i,0] = random.gauss(0,1)
-    
+
     def total_param_size(self):
         return self.W.size + self.V.size + self.Ws.size + len(self.L) * self.num_hid
 
@@ -225,14 +226,14 @@ class RntnModel(object):
                     theta[i] = t
                     i += 1
         except IndexError, e:
-            sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d, error is %s \n" 
+            sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d, error is %s \n"
                              % (total_size, i, str(e)))
             exit(1)
         if i != total_size:
             sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d \n",
                              % (total_size, i))
             exit(1)
-    
+
     def vector2param(theta):
         total_size = self.total_param_size()
         if len(theta) != total_size:
@@ -257,8 +258,8 @@ class RntnModel(object):
          for w in self.wlist:
              self.L[w] = nd.ndarray(shape(row, 1), buffer=array(theta[index:index+row]), dtype=float)
              index += row
-         
-         
+
+
 class RntnLossAndGradient(object):
     """loss and gradient from rnn tree
 
@@ -270,21 +271,30 @@ class RntnLossAndGradient(object):
         self.derivative = [] # derivative
         self.value = 0.0 # value
         self.f = SomeFunc()
-        
+        # derivative
+        self.W_d = np.zeros(shape=(self.model.num_hid, self.model.num_hid*2+1), dtype=float)
+        self.V_d = np.zeros(shape=(self.model.num_hid*2, self.model.num_hid*2, self.model.num_hid), dtype=float)
+        self.Ws_d = np.zeros(shape=(self.model.num_cate, self.model.num_hid+1), dtype=float)
+        self.wordvec_d = {}
+
     def derivative_at(self, theta):
         self.calculate(theta)
         return derivative
-    
+
     def value_at(self, theta):
         self.calculate(theta)
         return value
 
     def calculate(self, theta):
         self.model.vector2param(theta)
+        forword_tree = []
         for t in self.sample:
             forward_propagate(t, t.root)
-            
-    
+            forword_tree.append(t)
+        for t in forword_tree:
+            delta = np.zeros(shape=(self.model.num_hid, 1), dtype=float)
+            backprop_derivatives_and_error(t, t.root, delta)
+
     def forward_propagate(self, tree, cur_point):
         nodevector = None
         cate = None
@@ -303,17 +313,91 @@ class RntnLossAndGradient(object):
             childrenvector = self.f.concatenate_with_bias(leftvector, rightvector)
             tensor_in = self.f.concatenate(leftvector, rightvector)
             tensor_out = self.f.bilinear_products(self.model.V, tensor_in)
-            nodevector = self.f.tanh(np.dot(self.W,childrenvector) + tensor_out)
+            nodevector = self.f.tanh(np.dot(self.W, childrenvector) + tensor_out)
         elif(tree.nodelist[cur_point].left):
             self.forward_propagate(tree,tree.nodelist[cur_point].left)
             leftvector = tree.nodelist[tree.nodelist[cur_point].left].nodevec
             nodevector = self.f.tanh(leftvector)
         #elif(tree.nodelist[cur_point].right):
         # tree is created by preorder traversal, so never gone here
-        predictions = self.f.softmax(np.dot(self.model.Ws, self.f.concatenate_with_bias(nodevector)))
+        empty_array = np.empty(shape=(0,0))
+        predictions = self.f.softmax(np.dot(self.model.Ws, self.f.concatenate_with_bias(nodevector, empty_array)))
         tree.nodelist[cur_point].nodevector = nodevector
         tree.nodelist[cur_point].prediction = prediction
         tree.nodelist[cur_point].index = self.f.get_predicted_cate(prediction)
+        
+    def backprop_derivatives_and_error(self, tree, cur_point, delta):
+        currentvector = tree.nodelist[cur_point].nodevector
+        gold_label = np.zeros(shape=(self.model.num_cate, 1), dtype=float)
+        cindex = tree.nodelist[cur_point].index
+        if cindex >= 0:
+            gold_label[cindex][0] = 1.0
+        prediction = tree.nodelist[cur_point].prediction
+        delta_class = prediction - gold_label
+        empty_array = np.empty(shape=(0,0))
+        local_class_delta = np.dot(delta_class, self.f.concatenate_with_bias(currentvector, empty_array).transpose())
+        error = -self.f.element_mult(self.f.elment_wise_log(prediction), gold_label).sum()
+        tree.nodelist[cur_point].error = error
+        
+        if tree.nodelist[cur_point].isLeaf():
+            self.Ws_d += local_class_delta
+            fid = tree.nodelist[cur_point].fid
+            if fid:
+               currentvector_derivative = self.f.element_wise_tanh_derivative(currentvector)
+               delta_from_class = np.dot(self.model.Ws.transpose(), delta_class)
+               delta_from_class = self.f.element_mult(delta_from_class[0:self.model.num_hid, 0:1], currentvector_derivative)
+               delta_full = delta_from_class + delta
+               self.wordvec_d[fid].setdefault(fid, np.zeros(shape=(self.model.num_hid, 1), dtype=float))
+               self.wordvec_d[fid] += delta_full
+        elif(tree.nodelist[cur_point].left and tree.nodelist[cur_point].right):
+            self.Ws_d += local_class_delta
+            currentvector_derivative = self.f.element_wise_tanh_derivative(currentvector)
+            delta_from_class = np.dot(self.model.Ws.transpose(), delta_class)
+            delta_from_class = self.f.element_mult(delta_from_class[0:self.model.num_hid, 0:1], currentvector_derivative)
+            delta_full = delta_from_class + delta
+            leftvector = tree.nodelist[tree.nodelist[cur_point].left].nodevec
+            rightvector = tree.nodelist[tree.nodelist[cur_point].right].nodevec
+            childrenvector = self.f.concatenate_with_bias(leftvector, rightvector)
+            
+            W_df = np.dot(delta_full, childrenvector.transpose())
+            self.W_d += W_df
+            V_df = self.get_tensor_gradient(delta_full, leftvector, rightvector)
+            self.V_d += V_df
+            
+            delta_down = self.compute_tensor_delta_down(delta_full, leftvector, rightvector, self.model.W, self.model.V)
+            
+            left_derivative = self.f.element_wise_tanh_derivative(leftvector)
+            right_derivative = self.f.element_wise_tanh_derivative(rightvector)
+            left_delta_down = delta_down[0:delta_full.shape[0], 0:1]
+            right_delta_down = delta_down[delta_full.shape[0]:delta_full.shape[0]*2, 0:1]
+            
+            self.backprop_derivatives_and_error(self, tree, tree.nodelist[cur_point].left, 
+                                                self.f.element_mult(left_derivative, left_delta_down))
+            self.backprop_derivatives_and_error(self, tree, tree.nodelist[cur_point].right,
+                                                self.f.element_mult(right_derivative, right_delta_down))
+        elif(tree.nodelist[cur_point].left):
+            
+
+    def get_tensor_gradient(self, delta_full, lvec, rvec):
+        s = delta_full.size
+        V_df = np.zeros(shape=(2*s, 2*s, s), dtype=float)
+        full_vector = self.f.concatenate(lvec, rvec)
+        for i in range(s):
+            # scale full_vector*delta_full[i][0]
+            V_df[:,:,i] = np.dot(full_vector*delta_full[i][0], full_vector.transpose())
+        return V_df
+
+    def compute_tensor_delta_down(self, delta_full, lvec, rvec, w, v):
+        w_trans_delta = np.dot(w.transpose(), delta_full)
+        w_trans_delta_no_bias = w_trans_delta[0:w_trans_delta.shape[0]-1, 0:1]
+        s = delta_full.size
+        delta_tensor = np.zeros(shape=(2*s, 1), dtype=float)
+        full_vector = self.f.concatenate(lvec, rvec)
+        for i in range(size):
+            scaled_full_vector = full_vector * delta_full[i][0]
+            delta_tensor += np.dot((v[:,:,i]+v[:,:,i].transpose()), scaled_full_vector)
+        return delta_tensor+w_trans_delta_no_bias
+
 
 
 class SomeFunc(object):
@@ -325,7 +409,7 @@ class SomeFunc(object):
 
     def tanh(self, x):
         """tanh
-        
+
         Args:
             x: a matrix with float type
 
@@ -342,7 +426,7 @@ class SomeFunc(object):
     def concatenate_with_bias(self, lvec, rvec):
         # bias is 1.0
         new_array_row = lvec.shape[0] + rvec.shape[0]
-        new_array = np.zeros(shope=(new_array_row, 1), dtype=float)
+        new_array = np.zeros(shape=(new_array_row, 1), dtype=float)
         index = 0
         for i in range(lvec.shape[0]):
             new_array[index][0] = lvec[i][0]
@@ -351,7 +435,7 @@ class SomeFunc(object):
             new_array[index][0] = rvec[i][0]
             index += 1
         new_array[index][0] = 1.0 # bias
-    
+
         return new_array
 
     def concatenate(self, lvec, rvec):
@@ -364,28 +448,28 @@ class SomeFunc(object):
         for i in range(rvec.shape[0]):
             new_array[index][0] = rvec[i][0]
             index += 1
-        
+
         return new_array
-    
+
     def bilinear_products(self, t, vec):
         row, col, s = t.shape
         out = np.zeros(shape=(s, 1), dtype=float)
         for i in range(s):
             out[i][0] = np.dot(np.dot(vec.transpose(), t[:,:,i]), vec)
         return out
-    
-    def softmax(self, w, nodevec):                                       
-        """softmax classifer                                             
-        
-        Args:                                                            
-            w: cate weight with size C * (N +1), including bias.         
-            nodevec: sample vector with size N + 1, including bias.      
-                                                                             
-        Returns:                                                         
-            A matrix with one column                                     
-        """                                                              
-        resm = np.dot(w, nodevec)                                        
-        return resm/(resm.sum()+1)                                       
+
+    def softmax(self, w, nodevec):
+        """softmax classifer
+
+        Args:
+            w: cate weight with size C * (N +1), including bias.
+            nodevec: sample vector with size N + 1, including bias.
+
+        Returns:
+            A matrix with one column
+        """
+        resm = np.dot(w, nodevec)
+        return resm/(resm.sum()+1)
 
     def get_predicted_cate(self, vec):
         index = 0
@@ -394,6 +478,30 @@ class SomeFunc(object):
                 index = i
         return index
 
+    def element_wise_log(self, vec):
+        out = np.zeros(shape=vec.shape, dtype=float)
+        row, col = out.shape
+        for i in range(row):
+            for j in range(col):
+                out[i][j] = math.log(vec[i][j])
+        return out
+
+    def element_mult(self, vec1, vec2):
+        if vec1.shape != vec2.shape:
+            raise ArraySizeError("array size unequal")
+        col, row = vec1.shape
+        out = np.zeros(shape=vec1.shape, dtype=float)
+        for i in range(row):
+            for j in range(col):
+                out[i][j] = vec1[i][j] * vec2[i][j]
+        return out
+    
+    def element_wise_tanh_derivative(self, vec):
+        row, col = vec.shape
+        out = np.ndarray(shape=(row, col), buffer=np.array([1.0]*(row*col)), dtype=float)
+        out -= self.element_mult(vec, vec)
+        return out
+        
 
 def rntn_train(feature_file, dev_file, train_file, model_file):
     pass

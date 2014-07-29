@@ -171,7 +171,8 @@ class TreeNode(object):
         self.prediction = None # node's cate predicted by model.
         self.nodevector = None # node's vector representation.
         self.index = -1 # indicate the index in prediction where cate is located in.
-    
+        self.error = 0 # error between real label and predicted label
+
     def isLeaf(self):
         return self.leaf
     
