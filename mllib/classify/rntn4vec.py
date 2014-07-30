@@ -90,7 +90,7 @@ class RNTN(object):
             if(self.op.max_train_time_seconds > 0 and elapsed_time > self.op.max_train_time_seconds*1000):
                 print "Max training time exceeded, exiting"
                 break
-        self.t.report()
+        print self.t.report()
 
     def one_batch_training(self, t, sum_grad_square):
         # adagrad
@@ -116,6 +116,7 @@ class RNTN(object):
         """predict sentiment label
 
         """
+        self.t.start()
         rlg = RntnLossAndGradient(self.op, self.model, None)
         fp = open(self.result_file, 'w')
         for t in self.trd.slist:
@@ -124,6 +125,7 @@ class RNTN(object):
             for ri in r:
                 fp.write("%s,%s\n" % (ri[0], ri[1]))
         fp.close()
+        print self.t.report()
 
     def save_model(self):
         # serialization
@@ -571,13 +573,34 @@ class SomeFunc(object):
         return theta
 
 
-def rntn_train(feature_file, dev_file, train_file, model_file):
-    pass
+class PipeLine:
+    def __init__(self):
+        pass
+    
+    def train(self, feature_file, dev_file, train_file, model_file):
+        op = RntnOptions()
+        m = RntnModel(feature_file)
+        r = RNTN(op, m, feature_file, dev_file, train_file, model_file, None)
+        r.load_data()
+        r.train()
+        r.save_model()
 
-
-def rntn_predict(test_file, model_file):
-    pass
+    def predict(self, feature_file, test_file, model_file, result_file):
+        op = RntnOptions()
+        m = RntnModel(feature_file)
+        r = RNTN(op, m, feature_file, None, test_file, model_file, result_file)
+        r.load_data()
+        r.load_model()
+        r.predict()
 
 
 if __name__ == '__main__':
-    pass
+    feature_file = ''
+    train_file = ''
+    model_file = ''
+    result_file = ''
+    test_file = ''
+    
+    p = PipeLine()
+    p.train(feature_file, None, train_file, model_file)
+    p.predict(feature_file, test_file, model_file, result_file)
