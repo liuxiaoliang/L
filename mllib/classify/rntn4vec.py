@@ -15,6 +15,7 @@ import sys
 sys.path.append("../../common")
 import math
 import random
+import pickle
 import numpy as np
 import data_prepare as dpp
 from myexception import *
@@ -26,7 +27,8 @@ class RNTN(object):
 
     def __init__(self, op=None, model=None,
                  feature_file=None, dev_file=None,
-                 train_file=None, model_file=None):
+                 train_file=None, model_file=None,
+                 result_file=None):
         self.op = op # training options
         self.model = model # model parameters
         self.feature_file = feature_file
@@ -36,6 +38,7 @@ class RNTN(object):
         self.t = Timing() # Timing class
         self.trd = None # train or test dpp handle
         self.drd = None # dev dpp handle
+        self.result_file = result_file # predicted result
 
     def load_data(self):
         """Load data
@@ -87,6 +90,7 @@ class RNTN(object):
             if(self.op.max_train_time_seconds > 0 and elapsed_time > self.op.max_train_time_seconds*1000):
                 print "Max training time exceeded, exiting"
                 break
+        self.t.report()
 
     def one_batch_training(self, t, sum_grad_square):
         # adagrad
@@ -114,26 +118,17 @@ class RNTN(object):
         """
         pass
 
-    def get_cate(self, resm):
-        """get cate
-
-        Args:
-            returned value from softmax
-
-        Returns:
-            index with max value in resm
-        """
-        argmax = 0
-        for i in range(1, resm.size):
-            if resm[i] > resm[argmax]:
-                argmax = i
-        return argmax
-
     def save_model(self):
-        pass
+        # serialization
+        fp = open(self.model_file, 'w')
+        pickle.dump(self.model, fp)
+        fp.close()
 
     def load_model(self):
-        pass
+        # deserialization
+        fp = open(self.model_file, 'r')
+        self.model = pickle.load(fp)
+        fp.close()
 
 
 class RntnOptions(object):
@@ -264,7 +259,7 @@ class RntnLossAndGradient(object):
     """loss and gradient from rnn tree
 
     """
-    def __init__(self, m, t, op):
+    def __init__(self, op, m, t):
         self.model = m
         self.sample = t
         self.op = op
@@ -276,6 +271,8 @@ class RntnLossAndGradient(object):
         self.V_d = np.zeros(shape=(self.model.num_hid*2, self.model.num_hid*2, self.model.num_hid), dtype=float)
         self.Ws_d = np.zeros(shape=(self.model.num_cate, self.model.num_hid+1), dtype=float)
         self.wordvec_d = {}
+        for w in self.model.L:
+            self.wordvec_d[w] = np.zeros(shape=(self.model.num_hid, 1))
 
     def derivative_at(self, theta):
         self.calculate(theta)
@@ -291,10 +288,22 @@ class RntnLossAndGradient(object):
         for t in self.sample:
             forward_propagate(t, t.root)
             forword_tree.append(t)
+                                         
+        error = 0.0
         for t in forword_tree:
             delta = np.zeros(shape=(self.model.num_hid, 1), dtype=float)
             backprop_derivatives_and_error(t, t.root, delta)
-
+            error += t.get_error_sum()
+        scale = 1.0 / self.op.batch_size
+        self.value = scale * error
+        
+        self.value += self.scale_and_regularize(self.W_d, self.model.W, scale, self.op.regW)
+        self.value += self.scale_and_regularize(self.V_d, self.model.V, scale, self.op.regV)
+        self.value += self.scale_and_regularize(self.Ws_d, self.model.Ws, scale, self.op.regWs)
+        self.value += self.scale_and_regularize4wordvec(self.wordvec_d, self.model.L, scale, self.op.regL)
+        
+        self.derivative = self.f.params2vector(theta.size, self.W_d, self.V_d, self.Ws_d, self.wordvec_d, self.model)
+        
     def forward_propagate(self, tree, cur_point):
         nodevector = None
         cate = None
@@ -347,7 +356,6 @@ class RntnLossAndGradient(object):
                delta_from_class = np.dot(self.model.Ws.transpose(), delta_class)
                delta_from_class = self.f.element_mult(delta_from_class[0:self.model.num_hid, 0:1], currentvector_derivative)
                delta_full = delta_from_class + delta
-               self.wordvec_d[fid].setdefault(fid, np.zeros(shape=(self.model.num_hid, 1), dtype=float))
                self.wordvec_d[fid] += delta_full
         elif(tree.nodelist[cur_point].left and tree.nodelist[cur_point].right):
             self.Ws_d += local_class_delta
@@ -376,8 +384,20 @@ class RntnLossAndGradient(object):
             self.backprop_derivatives_and_error(self, tree, tree.nodelist[cur_point].right,
                                                 self.f.element_mult(right_derivative, right_delta_down))
         elif(tree.nodelist[cur_point].left):
+            self.Ws_d += local_class_delta
+            currentvector_derivative = self.f.element_wise_tanh_derivative(currentvector)
+            delta_from_class = np.dot(self.model.Ws.transpose(), delta_class)
+            delta_from_class = self.f.element_mult(delta_from_class[0:self.model.num_hid, 0:1], currentvector_derivative)
+            delta_full = delta_from_class + delta
+            leftvector = tree.nodelist[tree.nodelist[cur_point].left].nodevec
             
-
+            delta_down = np.dot(self.model.W.transpose(), delta_full)
+            
+            left_derivative = self.f.element_wise_tanh_derivative(leftvector)
+            left_delta_down = delta_down[0:delta_full.shape[0], 0:1]
+            self.backprop_derivatives_and_error(self, tree, tree.nodelist[cur_point].left,
+                                                self.f.element_mult(left_derivative, left_delta_down))
+                                         
     def get_tensor_gradient(self, delta_full, lvec, rvec):
         s = delta_full.size
         V_df = np.zeros(shape=(2*s, 2*s, s), dtype=float)
@@ -398,8 +418,21 @@ class RntnLossAndGradient(object):
             delta_tensor += np.dot((v[:,:,i]+v[:,:,i].transpose()), scaled_full_vector)
         return delta_tensor+w_trans_delta_no_bias
 
+    def scale_and_regularize(self, derivatives, current_matrices, scale, reg_cost):
+        cost = 0.0
+        derivatives = derivatives*scale + current_matrices*reg_cost # scale
+        cost += self.f.element_mult(current_matrices, current_matrices).sum() * reg_cost / 2.0
+        return cost
 
-
+    def scale_and_regularize4wordvec(self, derivatives, current_matrices, scale, reg_cost):
+        cost = 0.0
+        for w in current_matrices:
+            d = derivatives[w]
+            d = d*scale + current_matrices[w]*reg_cost # scale
+            derivatives[w] = d
+            cost +=  self.f.element_mult(current_matrices[w], current_matrices[w]).sum() * reg_cost / 2.0
+        return cost
+            
 class SomeFunc(object):
     """common functions
 
@@ -502,6 +535,34 @@ class SomeFunc(object):
         out -= self.element_mult(vec, vec)
         return out
         
+    def params2vector(self, total_size, W, V, Ws, L, model):
+        theta = [0.0] * total_size
+        i = 0
+        try:
+            for t in W.flat:
+                theta[i] = t
+                i += 1
+            for t in V.flat:
+                theta[i] = t
+                i += 1
+            for t in Ws.flat:
+                theta[i] = t
+                i += 1
+            for w in model.wlist:
+                for t in L[w].flat:
+                    theta[i] = t
+                    i+= 1
+        except IndexError, e:
+            sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d, error is %s \n"
+                             % (total_size, i, str(e)))
+            exit(1)
+        if i != total_size:
+            sys.stderr.write("param2vector error, total_param_size is %d, current theta index is %d \n",
+                             %(len(theta), total_size))
+            exit(1)
+            
+        return theta
+
 
 def rntn_train(feature_file, dev_file, train_file, model_file):
     pass

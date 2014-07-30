@@ -261,6 +261,25 @@ class RnnTree(object):
                 p = s.pop()
                 p = self.nodelist[p].right
         
+    def get_error_sum(self):
+        error_sum = 0
+        if self.root is None:
+            print "Tree is empty"
+            return error_sum
+        
+        p = self.root
+        s = []
+        while(len(s) > 0 or p != None):
+            while(p != None):
+                error_sum += self.nodelist[p].error
+                s.append(p)
+                p = self.nodelist[p].left
+            if len(s) > 0:
+                p = s.pop()
+                p = self.nodelist[p].right
+        
+        return error_sum
+        
 
 class RNNDPP(object):
     """data preprocess for treebank
