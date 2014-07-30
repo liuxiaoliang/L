@@ -280,6 +280,22 @@ class RnnTree(object):
         
         return error_sum
         
+    def get_predicted_label(self):
+        r = []
+        if self.root is None:
+            print "Tree is empty"
+            exit(0)
+        p = self.root
+        s = []
+        while(len(s) > 0 or p != None):
+            while(p != None):
+                r.append((self.nodelist[p].nid, self.nodelist[p].index))
+                s.append(p)
+                p = self.nodelist[p].left
+            if len(s) > 0:
+                p = s.pop()
+                p = self.nodelist[p].right
+        return r
 
 class RNNDPP(object):
     """data preprocess for treebank

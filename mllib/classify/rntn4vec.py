@@ -33,7 +33,7 @@ class RNTN(object):
         self.model = model # model parameters
         self.feature_file = feature_file
         self.dev_file = dev_file
-        self.train_file = train_file
+        self.train_file = train_file # train or test file
         self.model_file = model_file
         self.t = Timing() # Timing class
         self.trd = None # train or test dpp handle
@@ -94,7 +94,7 @@ class RNTN(object):
 
     def one_batch_training(self, t, sum_grad_square):
         # adagrad
-        rlg = RntnLossAndGradient(self.model, t, self.op)
+        rlg = RntnLossAndGradient(self.op, self.model, t)
         theta = self.model.param2vector()
         eps = 1e-3
         cur_loss = 0
@@ -112,11 +112,18 @@ class RNTN(object):
         """
         pass
 
-    def classify(self, cflie):
+    def predict(self):
         """predict sentiment label
 
         """
-        pass
+        rlg = RntnLossAndGradient(self.op, self.model, None)
+        fp = open(self.result_file, 'w')
+        for t in self.trd.slist:
+            rlg.forward_propagate(t, t.root)
+            r = t.get_predicted_label()
+            for ri in r:
+                fp.write("%s,%s\n" % (ri[0], ri[1]))
+        fp.close()
 
     def save_model(self):
         # serialization
@@ -330,7 +337,7 @@ class RntnLossAndGradient(object):
         #elif(tree.nodelist[cur_point].right):
         # tree is created by preorder traversal, so never gone here
         empty_array = np.empty(shape=(0,0))
-        predictions = self.f.softmax(np.dot(self.model.Ws, self.f.concatenate_with_bias(nodevector, empty_array)))
+        prediction = self.f.softmax(np.dot(self.model.Ws, self.f.concatenate_with_bias(nodevector, empty_array)))
         tree.nodelist[cur_point].nodevector = nodevector
         tree.nodelist[cur_point].prediction = prediction
         tree.nodelist[cur_point].index = self.f.get_predicted_cate(prediction)
