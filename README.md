@@ -17,6 +17,8 @@ common： 一些通用的库和函数
 
 app： 具体的任务应用，目前只有一个， kaggle-sentiment-ananlysisi  
 
+dataset： 一些通用实验数据  
+
 文档
 =
 [文档链接](http://liuxiaoliang.github.io/)
