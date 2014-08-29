@@ -402,12 +402,14 @@ class RNNDPP(object):
 
 
 class ConllDPP(object):
-    """data preprocess for conll dataset
+    """data preprocess for conll2007 dataset
     
     """
     START = ['-START-', '-START2-']
     END = ['-END-', '-END2-']
-    pass
+    def __init__(self, sample_file):
+        self.sample_file = sample_file
+        
 
 
 if __name__ == '__main__':
