@@ -399,7 +399,17 @@ class RNNDPP(object):
             #rnntree.preorder_traversal()
             self.slist.append(rnntree)
         fp.close()
-        
+
+
+class ConllDPP(object):
+    """data preprocess for conll dataset
+    
+    """
+    START = ['-START-', '-START2-']
+    END = ['-END-', '-END2-']
+    pass
+
+
 if __name__ == '__main__':
     file_path_feature = sys.argv[1]
     file_path_sample = sys.argv[2]
@@ -409,7 +419,8 @@ if __name__ == '__main__':
     #print cd.feature2id.items()[:3]
     #print cd.slist[0].sid, cd.slist[0].label, [x.iid for x in cd.slist[0].flist]
     #print cd.slist[1].sid, cd.slist[1].label, [x.iid for x in cd.slist[1].flist]
-    cd = RNNDPP(file_path_feature, file_path_sample)
-    cd.load_feature()
-    cd.load_sample()
-    print len(cd.slist)
+    #cd = RNNDPP(file_path_feature, file_path_sample)
+    #cd.load_feature()
+    #cd.load_sample()
+    #print len(cd.slist)
+    
