@@ -409,7 +409,14 @@ class ConllDPP(object):
     END = ['-END-', '-END2-']
     def __init__(self, sample_file):
         self.sample_file = sample_file
-        
+        self.data4postag = []
+        self.data4parse = []
+
+    def get_data(self):
+        pass
+
+    
+    
 
 
 if __name__ == '__main__':
