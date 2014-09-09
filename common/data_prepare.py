@@ -405,20 +405,45 @@ class ConllDPP(object):
     """data preprocess for conll2007 dataset
     
     """
-    START = ['-START-', '-START2-']
-    END = ['-END-', '-END2-']
+    _START = ['-START-', '-START2-']
+    _END = ['-END-', '-END2-']
     def __init__(self, sample_file):
         self.sample_file = sample_file
         self.data4postag = []
-        self.data4parse = []
+        self.data4parser = []
 
     def get_data(self):
-        pass
+        fp = open(self.sample_file, 'r')
+        linelist = fp.read().strip().split('\n\n')
+        for line in linelist:
+            words = []
+            tags = []
+            heads = []
+            labels = []
+            tokenlist = line.split('\n')
+            for t in tokenlist:
+                tlist = t.strip().split('\t')
+                try:
+                    word = tlist[1]
+                    tag = tlist[4]
+                    head = tlist[6]
+                    label = tlist[7]
+                except:
+                    continue
+                words.append(word)
+                tags.append(tag)
+                heads.append(head) #(int(head) + 1 if head != '-1' else len(tokenlist) + 1)
+                labels.append(label)
+            self._pad_tokens(words)
+            self._pad_tokens(tags)
+            self.data4postag.append((words, tags))
+            self.data4parser.append((words, tags, heads, labels))
+        fp.close()
 
+    def _pad_tokens(self, tokens):
+        tokens.insert(0, '<start>')
+        tokens.append('ROOT')
     
-    
-
-
 if __name__ == '__main__':
     file_path_feature = sys.argv[1]
     file_path_sample = sys.argv[2]
@@ -432,4 +457,12 @@ if __name__ == '__main__':
     #cd.load_feature()
     #cd.load_sample()
     #print len(cd.slist)
+    cd = ConllDPP(file_path_sample)
+    cd.get_data()
+    for p in cd.data4parser:
+        print '\t'.join(p[0])
+        print '\t'.join(p[1])
+        print '\t'.join([str(i) for i in p[2]])
+        print '\t'.join(p[3])
+        print
     

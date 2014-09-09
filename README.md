@@ -3,7 +3,7 @@
 
 machine  learning
 
-This project is only for study.  
+This project is only for learning.  
 
 目录结构
 =
@@ -13,9 +13,9 @@ mllib： 机器学习相关
 
 nlp：自然语言处理相关  
 
-cg: 计算机图形图像处理  
+cg：图像处理相关  
 
-cv: 计算机视觉处理  
+cv：视觉处理相关  
 
 common： 一些通用的库和函数  
 
