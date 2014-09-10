@@ -405,11 +405,11 @@ class ConllDPP(object):
     """data preprocess for conll2007 dataset
     
     """
-    _START = ['-START-', '-START2-']
-    _END = ['-END-', '-END2-']
+    START = ['-START-', '-START2-']
+    END = ['-END-', '-END2-']
     def __init__(self, sample_file):
         self.sample_file = sample_file
-        self.data4postag = []
+        self.data4postagger = []
         self.data4parser = []
 
     def get_data(self):
@@ -436,14 +436,25 @@ class ConllDPP(object):
                 labels.append(label)
             self._pad_tokens(words)
             self._pad_tokens(tags)
-            self.data4postag.append((words, tags))
+            self.data4postagger.append((words, tags))
             self.data4parser.append((words, tags, heads, labels))
         fp.close()
 
     def _pad_tokens(self, tokens):
         tokens.insert(0, '<start>')
         tokens.append('ROOT')
-    
+        
+    def normalize(self, word):
+        if '-' in word and word[0] != '-':
+            return '!HYPHEN'
+        elif word.isdigit() and len(word) == 4:
+            return '!YEAR'
+        elif word[0].isdigit():
+            return '!DIGITS'
+        else:
+            return word.lower()
+
+
 if __name__ == '__main__':
     file_path_feature = sys.argv[1]
     file_path_sample = sys.argv[2]

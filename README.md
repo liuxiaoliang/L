@@ -1,8 +1,6 @@
 说明
 =
 
-Data Analysis
-
 This project is only for learning.  
 
 目录结构

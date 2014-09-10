@@ -45,7 +45,8 @@ class Perceptron(object):
     def update(self, real, predict, fea):
         def update_fea(f, c, w, v):
             param = (f, c)
-            self._total[param].setdefault(param, 0)
+            self._total.setdefault(param, 0)
+            self._last_time.setdefault(param, 0)
             self._total[param] += (self.i - self._last_time[param]) * w
             self._last_time[param] = self.i
             self.weights[f][c] = w + v
@@ -55,8 +56,8 @@ class Perceptron(object):
             return None
         for f in fea:
             weights = self.weights.setdefault(f, {})
-            update_fea(f, real, weights.get(truth, 0.0), 1.0)
-            update_fea(f, predict, weights.get(guess, 0.0), -1.0)
+            update_fea(f, real, weights.get(real, 0.0), 1.0)
+            update_fea(f, predict, weights.get(predict, 0.0), -1.0)
     
     def average_weights(self):
         if self.i == 0:
@@ -66,9 +67,9 @@ class Perceptron(object):
             for c, w in weights.items():
                 param = (fea, c)
                 total = self._total[param]
-                total += (self.i - self._last_time[param]) * weight
+                total += (self.i - self._last_time[param]) * w
                 averaged_weights = round(total / float(self.i), 3)
-                if averaged:
+                if averaged_weights:
                     new_fea_weights[c] = averaged_weights
             self.weights[fea] = new_fea_weights
 
@@ -85,11 +86,11 @@ class Perceptron(object):
         return max(self.cates, key=lambda c: (scores[c], c))
 
     def save(self):
-        with open(path, 'w') as fp:
+        with open(self.path, 'w') as fp:
             pickle.dump(self.weights, fp)
 
     def load(self):
-        with open(path, 'w') as fp:
+        with open(self.path, 'w') as fp:
             self.weights = pickle.load(fp)
 
 
