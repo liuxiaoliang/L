@@ -46,23 +46,32 @@ class PosTagger(object):
         self.tagdict = {}
         self.model = Perceptron(self.cates)
         if sample_file:
-            self.cdpp = dp.ConllDPP(self.sample_file)
+            self.cdpp = dpp.ConllDPP(self.sample_file)
         self.iter_num = 5
 
     def train(self):
+        self.cdpp.get_data()
         self._make_tagdict()
         self.model = Perceptron(self.cates)
         for i in range(self.iter_num):
-            for words, tags in self.cdpp:
+            for words, tags in self.cdpp.data4postagger:
                 self.train_one(words, tags)
-            random.shuffle(self.cdpp)
-
+            random.shuffle(self.cdpp.data4postagger)
+        self.model.average_weights()
+        
     def predict(self):
-        pass
-
-    def train_one(self):
+        self.cdpp.get_data()
+        fp = open(self.result_file, 'w')
+        for words, tags in self.cdpp.data4postagger:
+            predicted_tags = self.predict_one(words)
+            for i, w in enumerate(words):
+                fp.write(w + '\t' + tags[i] + '\t' + predicted_tags[i] + '\n')
+            fp.write('\n')
+        fp.close()
+        
+    def train_one(self, words, tags):
         prev, prev2 = self.cdpp.START
-        context = self.cdpp.START + [self._normalize(w) for w in words] + self.cdpp.END
+        context = self.cdpp.START + [self.cdpp.normalize(w) for w in words] + self.cdpp.END
         for i, word in enumerate(words):
             guess = self.tagdict.get(word)
             if not guess:
@@ -72,25 +81,54 @@ class PosTagger(object):
             prev2 = prev; prev = guess
 
     def predict_one(self, words, tokenize=True):
-        prev, prev2 = START
-        tags = DefaultList('') 
-        context = START + [self._normalize(w) for w in words] + END
+        prev, prev2 = self.cdpp.START
+        tags = []
+        context = self.cdpp.START + [self.cdpp.normalize(w) for w in words] + self.cdpp.END
         for i, word in enumerate(words):
             tag = self.tagdict.get(word)
             if not tag:
-                features = self._get_features(i, word, context, prev, prev2)
+                features = self._get_feature(i, word, context, prev, prev2)
                 tag = self.model.predict(features)
             tags.append(tag)
             prev2 = prev; prev = tag
         return tags
     
-    def _get_feature(self):
-        pass
+    def _get_feature(self, i, word, context, prev, prev2):
+        """get featufe
+        
+        Map tokens into a feature representation, implemented as a
+        {hashable: float} dict. If the features change, a new model must be
+        trained.
+        
+        This function is copied from Github.
+        """
+        def add(name, *args):
+            feas.setdefault(' '.join((name,) + tuple(args)), 0)
+            feas[' '.join((name,) + tuple(args))] += 1
+ 
+        i += len(self.cdpp.START)
+        feas = {}
+
+        add('bias')
+        add('i suffix', word[-3:])
+        add('i pref1', word[0])
+        add('i-1 tag', prev)
+        add('i-2 tag', prev2)
+        add('i tag+i-2 tag', prev, prev2)
+        add('i word', context[i])
+        add('i-1 tag+i word', prev, context[i])
+        add('i-1 word', context[i-1])
+        add('i-1 suffix', context[i-1][-3:])
+        add('i-2 word', context[i-2])
+        add('i+1 word', context[i+1])
+        add('i+1 suffix', context[i+1][-3:])
+        add('i+2 word', context[i+2])
+        return feas
 
     def _make_tagdict(self):
         counts = {}
-        for s in self.cdpp:
-            for word, tag in zip(sent[0], sent[1]):
+        for s in self.cdpp.data4postagger:
+            for word, tag in zip(s[0], s[1]):
                 counts.setdefault(word, {})
                 counts[word].setdefault(tag, 0)
                 counts[word][tag] += 1
@@ -105,22 +143,31 @@ class PosTagger(object):
             if n >= freq_thresh and (float(mode) / n) >= ambiguity_thresh:
                 self.tagdict[word] = tag
                      
-    def _normalize(self, word):
-        if '-' in word and word[0] != '-':
-            return '!HYPHEN'
-        elif word.isdigit() and len(word) == 4:
-            return '!YEAR'
-        elif word[0].isdigit():
-            return '!DIGITS'
-        else:
-            return word.lower()
-
     def save(self):
-        pass
+        with open(self.result_file, 'wb') as fp:
+            pickle.dump((self.model.weights, self.tagdict, self.cates), fp)
 
     def load(self):
-        pass
+        with open(self.model_file, 'rb') as fp:
+            m = pickle.load(fp)
+
+        self.model.weights = m[0]
+        self.tagdict = m[1]
+        self.cates = m[2]
+        self.model.cates = m[2]
 
 
 if __name__ == '__main__':
-    pass
+    sample_file = sys.argv[1]
+    result_file = sys.argv[2]
+    model_file = sys.argv[3]
+    # train
+    # use ../../dataset/conll2007/eus.train
+    #pt = PosTagger(sample_file=sample_file, result_file=result_file)
+    #pt.train()
+    #pt.save()
+    # predict
+    # use ../../dataset/conll2007/eus.test
+    pt = PosTagger(sample_file=sample_file, result_file=result_file, model_file=model_file)
+    pt.load()
+    pt.predict()
