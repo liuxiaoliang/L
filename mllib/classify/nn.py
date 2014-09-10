@@ -74,6 +74,10 @@ class Perceptron(object):
             self.weights[fea] = new_fea_weights
 
     def predict(self, fea):
+        scores = self.score(fea)
+        return max(self.cates, key=lambda c: (scores[c], c))
+    
+    def score(self, fea):
         scores = dict((c, 0) for c in self.cates)
         for f, v in fea.items():
             if v == 0:
@@ -83,7 +87,7 @@ class Perceptron(object):
             fea_weights = self.weights[f]
             for c, w in fea_weights.items():
                 scores[c] += v * w
-        return max(self.cates, key=lambda c: (scores[c], c))
+        return scores
 
     def save(self):
         with open(self.path, 'w') as fp:
