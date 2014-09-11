@@ -45,8 +45,7 @@ class PosTagger(object):
             self.cates = set()
         self.tagdict = {}
         self.model = Perceptron(self.cates)
-        if sample_file:
-            self.cdpp = dpp.ConllDPP(self.sample_file)
+        self.cdpp = dpp.ConllDPP(self.sample_file)
         self.iter_num = 5
 
     def train(self):

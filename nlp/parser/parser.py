@@ -62,7 +62,7 @@ class Parser(object):
             corr = 0; total = 0
             random.shuffle(self.cdpp.data4parser)
             for words, gold_tags, gold_parse, gold_label in self.cdpp.data4parser:
-                corr += self.train_one(it, words, gold_tags, gold_parse)
+                self.train_one(it, words, gold_tags, gold_parse)
                 total += len(words)
             #print it, '%.3f' % (float(corr) / float(total))
         self.model.average_weights()
@@ -79,7 +79,10 @@ class Parser(object):
             valid_moves = self._get_valid_moves(i, n, len(stack))
             gold_moves = self._get_gold_moves(i, n, stack, deptree.heads, gold_heads)
             predict = max(valid_moves, key=lambda move: scores[move])
-            assert gold_moves
+            #best = predict
+            if not gold_moves:
+                break
+                #best = max(gold_moves, key=lambda move: scores[move])
             best = max(gold_moves, key=lambda move: scores[move])
             self.model.update(best, predict, features)
             i = self._transition(predict, i, stack, deptree)
@@ -87,10 +90,15 @@ class Parser(object):
     def predict(self):
         self.tagger.load()
         fp = open(self.result_file, 'w')
-        for words, tags, gold_parse, gold_heads in self.cdpp.data4parser:
+        for words, tags, gold_heads, gold_labels in self.cdpp.data4parser:
             predicted_heads = self.predict_one(words)
             for i, w in enumerate(words):
-                fp.write(w + '\t' + gold_heads[i] + '\t' + predicted_heads[i] + '\n')
+                try:
+                    fp.write(w + '\t' + str(gold_heads[i]) + '\t' + str(predicted_heads[i]) + '\n')
+                except:
+                    print i
+                    print len(words), len(gold_heads), len(predicted_heads)
+                    exit(1)
             fp.write('\n')
         fp.close()
 
@@ -119,8 +127,10 @@ class Parser(object):
         """
         def __init__(self, n):
             self.n = n
-            self.heads = [None] * (n-1)
-            self.labels = [None] * (n-1)
+            self.heads = [None] * (n)
+            self.heads[0] = 0
+            self.heads[-1] = -1
+            self.labels = [None] * (n)
             self.lefts = []
             self.rights = []
             for i in range(n+1):
@@ -244,7 +254,7 @@ class Parser(object):
                     (Tslist[0], Tsrplist[1], Tnlist[0]), (Tslist[0], Tsrplist[1], Tnlist[0]), 
                     (Tslist[0], Tnlist[0], Tnlplist[1]),(Tslist[0], Tslplist[1], Tslplist[2]), 
                     (Tslist[0], Tsrplist[1], Tsrplist[2]), (Tnlist[0], Tnlplist[1], Tnlplist[2]),
-                    tuple(Tslist[0]))
+                    tuple(Tslist))
         for i, (t1, t2, t3) in enumerate(trigrams):
             if t1 or t2 or t3:
                 features['ttt-%d %s %s %s' % (i, t1, t2, t3)] = 1
@@ -289,7 +299,7 @@ class Parser(object):
             dtheads: deptree's heads
             gheads: real heads
         Returns:
-            moves: gold moves
+            moves: gold moves, maybe is a empty list.
         """
         def deps_between(target, others, gold):
             for word in others:
@@ -355,11 +365,11 @@ if __name__ == '__main__':
     tagger_model_file = sys.argv[4]
     # train
     # use ../../dataset/conll2007/eus.train
-    pt = Parser(sample_file=sample_file, result_file=result_file, tagger_model_file=tagger_model_file)
-    pt.train()
-    pt.save()
+    #pt = Parser(sample_file=sample_file, result_file=result_file, tagger_model_file=tagger_model_file)
+    #pt.train()
+    #pt.save()
     # predict
     # use ../../dataset/conll2007/eus.test
-    #pt = Parser(sample_file=sample_file, result_file=result_file, model_file=model_file, tagger_model_file=tagger_model_file)
-    #pt.load()
-    #pt.predict()
+    pt = Parser(sample_file=sample_file, result_file=result_file, model_file=model_file, tagger_model_file=tagger_model_file)
+    pt.load()
+    pt.predict()
