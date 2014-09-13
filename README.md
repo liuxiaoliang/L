@@ -1,7 +1,7 @@
 说明
 =
 
-This project is only for learning.  
+This project is just for study.  
 
 目录结构
 =
