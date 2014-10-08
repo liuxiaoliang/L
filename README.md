@@ -3,21 +3,21 @@
 
 This project is just for study.  
 
-目录结构
+DIRS
 =
-math： 数学相关的库  
+math：Math Libs.
 
-mllib： 机器学习相关  
+mllib： Machine Learning.  
 
-nlp：自然语言处理相关，含语音处理  
+nlp：Natural Language Processing.  
 
-cv：视觉处理相关，含图像处理  
+cv：Computer Vision.  
 
-common： 一些通用的库和函数  
+common： Common Libs.  
 
-dataset： 一些通用实验数据  
+dataset：Common Dataset.  
 
-app： 具体的任务应用  
+app： Some Applications.  
 
 文档
 =

@@ -25,8 +25,9 @@ class Kmeans(objec):
         self._k_num = k_num
         self._o_filepath = output_filepath
         self._dim = 0
-        self.cdpp = dp.ClusterDPP(self._filepath)
-        
+        self._cdpp = dp.ClusterDPP(self._filepath)
+        self._cdpp.load_sample()
+        self._dim = self.cdpp.dim
         
     def _random_k(self):
         """random
@@ -56,7 +57,7 @@ class Kmeans(objec):
         """
         pass
 
-    def _cmpt_center(self, points):
+    def _cmpt_cnt(self, points):
         """computer center
 
         """
