@@ -458,6 +458,49 @@ class ConllDPP(object):
             return word.lower()
 
 
+class ClusterDPP(object):
+    """csv dpp
+    
+    Process file for kmeans.
+    Line in file_path_sample separated by a space:
+    id fea1 fea2 ...
+    
+    Dense format.
+    """
+    def __init__(self, file_path):
+        self._file_path = file_path
+        self.slist = []
+        self.dim = 0
+    
+    def load_sample(self):
+        """load data
+
+        """
+        ret = 0
+        try:
+            fp = open(self._file_path, 'r')
+        except IOError, e:
+            sys.stderr.write(str(e) + '\n')
+            return ret
+        line_no = 1
+        for line in fp:
+            line = line.strip()
+            linelist = line.split(' ')
+            sid = linelist[0]
+            flist = linelist[1:]
+            s = Sample()
+            s.sid = sid
+            for f in flist:
+                fe = Feature()
+                if f:
+                    fe.iweight = float(f)
+                s.flist.append(fe)
+            if len(s.flist) > 0:
+                self.slist.append(s)
+            line_no += 1
+        # get dimension
+        self.dim = len(self.slist[0].flist)
+        
 if __name__ == '__main__':
     file_path_feature = sys.argv[1]
     file_path_sample = sys.argv[2]
@@ -471,12 +514,21 @@ if __name__ == '__main__':
     #cd.load_feature()
     #cd.load_sample()
     #print len(cd.slist)
-    cd = ConllDPP(file_path_sample)
-    cd.get_data()
+    #cd = ConllDPP(file_path_sample)
+    #cd.get_data()
+    """
     for p in cd.data4parser:
         print '\t'.join(p[0])
         print '\t'.join(p[1])
         print '\t'.join([str(i) for i in p[2]])
         print '\t'.join(p[3])
         print
+    """
+    cd = ClusterDPP(file_path_sample)
+    cd.load_sample()
+    print cd.dim
+    print len(cd.slist)
+    for f in cd.slist[12].flist:
+        print f.iweight
+        
     
