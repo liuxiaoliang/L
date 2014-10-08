@@ -1,9 +1,9 @@
-说明
+Notes
 =
 
 This project is just for study.  
 
-DIRS
+Dirs
 =
 math：Math Libs.
 
@@ -19,6 +19,6 @@ dataset：Common Dataset.
 
 app： Some Applications.  
 
-文档
+Docs
 =
-[文档链接](http://liuxiaoliang.github.io/)
+[Link](http://liuxiaoliang.github.io/)
