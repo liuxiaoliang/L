@@ -92,7 +92,7 @@ class KMeans(object):
             new_means[c].append(s)
 
         for cnt, clt in new_means.items():
-            self._centers[cnt] = self._cmpt_cnt(clt)
+            self._centers[cnt] = self._cmptr_cntr(clt)
 
     def _distance(self, a, b):
         """distance
@@ -114,7 +114,7 @@ class KMeans(object):
             _sum += difference_sq
         return sqrt(_sum)
 
-    def _cmpt_cnt(self, points):
+    def _cmptr_cntr(self, points):
         """computer center
 
         Args:
@@ -174,6 +174,6 @@ class KMeans(object):
 
 
 if __name__ == '__main__':
-    k = KMeans('../../dataset/cluster/kmeans_sample2', 100, './test')
+    k = KMeans('/home/liuxiaoliang5/workspace/test/guodian/id_fea', 100, '/home/liuxiaoliang5/workspace/test/guodian/clusters2')
     k.kmeans()
     k.save()
