@@ -1,7 +1,7 @@
 Notes
 =
 
-This project is just for study.  
+This project is just for study with an emphasize on principle of algorithm, how to adjust parameters and prototype of distributed and parallel algorithms.  
 
 Dirs
 =
