@@ -4,9 +4,9 @@
 # Copyright (c) <2014> <leon.max.liew@gmail.com>
 #
 
-"""pca
+"""svd
 
-principal component analysis.
+singular value decomposition.
 """
 
 __author__ = 'xiaoliang liu'
@@ -16,28 +16,14 @@ import sys
 sys.path.append("../../common/")
 import numpy as np
 
-class PCABase(object):
-    """paca base
+class SVD(ojbect):
+    """svd
 
     """
     def __init__(self, ):
         pass
 
-    def pca(self):
-        return None
-
-class PCABySVD(PCABase):
-    """pca by svd
-
-    """
-    def __init__(self,):
-        pass
-
-class PCAByNipals(PCABase):
-    """pca by nipals
-
-    """
-    def __init__(self):
+    def svd(self, ):
         pass
 
 
