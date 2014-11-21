@@ -255,12 +255,12 @@ class RntnModel(object):
          index += row*col*s
          # get Ws
          row, col = self.Ws.shape
-         self.Ws = np.ndarray(shape(row,col), buffer=array(theta[index:index+row*col]), dtype=float)
+         self.Ws = np.ndarray(shape=(row,col), buffer=array(theta[index:index+row*col]), dtype=float)
          index += row*col
          # get L
          row = self.num_hid
          for w in self.wlist:
-             self.L[w] = nd.ndarray(shape(row, 1), buffer=array(theta[index:index+row]), dtype=float)
+             self.L[w] = nd.ndarray(shape=(row, 1), buffer=array(theta[index:index+row]), dtype=float)
              index += row
 
 
