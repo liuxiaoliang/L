@@ -70,7 +70,7 @@ if __name__ == '__main__':
     print pca_case.loadings
     print pca_case.explained_var
     ev = pca_case.explained_var
-    # reduce dimension acoording to the first N explained_var's sum.
+    # reduce dimension acoording to thr proportion of the first N explained_var's sum to all explained_var's sum.
     print ev[0]/sum(ev)
     # get the new arr in the mapping space.
     print np.dot(pca_case.loadings[0:,], arr)
