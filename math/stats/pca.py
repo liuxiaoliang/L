@@ -35,7 +35,7 @@ class PCABase(object):
         
         Returns: loading matrix and explained_var.
         """
-        return None
+        pass
     
 
 class PCABySVD(PCABase):
