@@ -149,6 +149,6 @@ if __name__ == '__main__':
     print "-------------U-------------"
     print U
     print "-------------S-------------"
-    print S
+    print np.diag(S)
     print "-------------V-------------"
     print V
