@@ -15,8 +15,8 @@ import os
 import sys
 import numpy as np
 
-class SimplexMethodBase(object):
-    """simplex method
+class SolverBase(object):
+    """base
 
     """
     def __init__(self, ):
@@ -25,14 +25,32 @@ class SimplexMethodBase(object):
     def solve(self):
         pass
 
-class SimplexMethodByGauss(SimplexMethodBase):
+class SimplexByGauss(SolverBase):
     """gauss elimination
     
     """
     def __init__(self):
-        SimplexMethodBase.__init__(self,)
+        SolverBase.__init__(self,)
 
     
+class RevisedSimplex(SolverBase):
+    """
+
+    Use matrix product to solve linear programming question.
+    """
+    def __init__(self):
+        SimplexBase.__init__(self,)
+
+class DualSimplex(SolverBase):
+    """
+    
+    Use dual reprsentation
+    """
+    def __init__(self):
+        SolverBase.__init__(self,)
+
+class InteriorPoint(SolverBase):
+    pass
 
 if __name__ == '__main__':
     print 'test'
