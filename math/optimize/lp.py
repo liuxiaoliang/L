@@ -121,17 +121,20 @@ class SimplexByGauss(SolverBase):
             self.__exchange_in_out(in_var, out_var)
             if it > self.iter_num:
                 break
+
         if isHaveSolution:
-            print "x:"
             fx = 0
+            x = []
             for i, j in enumerate(self.base_var):
-                print j, self.con_matrix[i][-1]
+                x.append([j, self.con_matrix[i][-1]])
                 fx += self.con_matrix[i][-1]*self.obj[j]
+            x.sort()
             if not self.isMin:
                 fx = -1*fx
-            print "f(x):", fx
+            return (x, fx)
         else:
-            print 'no solution'
+            return None
+            
 
     def __init_base_var(self):
         """
@@ -248,5 +251,5 @@ if __name__ == '__main__':
             [-2, -1, 2, 5, '>=', 3]]
     print 'test SimplexByGauss'
     sg = SimplexByGauss(obj, cons, True, 100)
-    sg.solve()
+    print sg.solve()
     
